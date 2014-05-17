@@ -1,33 +1,31 @@
 import json
+import networkx as nx
 import urllib2
 
-# Input
-token = 'CAACEdEose0cBAIva2Ef6o27r3Xjj04cxQSiAznzdYzw8fCmgnp0JsalR41WZCCHqxbODyZCMMw0txodsLvYZAYY2Vd56ZATIYKGQIbgC7CZAg4GRvCD8zKI3727bQv5AZA5V4PhnZCamYfd8ie9N7TXXiy2KZCfbi8Hv1N7ejwSxqzcOpS7FStoSFOrqxAhXMHfvrbbSydI6gQZDZD'
-
-action = '/me'
-fields = ''
-
-metadata = '1'
+# Access token
+token = 'CAACEdEose0cBAFic3CCIwZAaJ5HVyzRovbqBNmYVD5SX52RMZBNZChgLIIJmK6TkpUYjncL62J3TrJP4tFEGlXu885lZAsnHZCgBFyest49bZAwQFV9OZBpgNvCkLp7BbZBniKhDhcwVCWRakVuVKL2h1OSUDU4UdR2swhZAqrtqXyXZBTcHEsn4nL9yPQeSIIkn0JiZBaXWnT7owZDZD'
 
 # API
 api = 'https://graph.facebook.com'
 
 # Action
-act = action
+action = '/me'
 
-# Fields
-flds = '?fields=' + fields
+# Build query
+def q(action):
+    query = api + action
+    if '?' in query:
+        query += '&'
+    else:
+        query += '?'
+    query += 'access_token=' + token
+    return query
 
-# Metadata
-mtdt = '&metadata=' + metadata
-
-# Access
-access = '&access_token=' + token
+# URL
+url = q(action)
 
 # Operation
-url = api + act + flds + mtdt + access
 response = urllib2.urlopen(url)
 content = response.read()
-data = json.loads(content)
-print data
 response.close()
+data = json.loads(content)
