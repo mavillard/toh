@@ -3,13 +3,13 @@ import networkx as nx
 import urllib2
 
 # Access token
-token = 'CAACEdEose0cBAFic3CCIwZAaJ5HVyzRovbqBNmYVD5SX52RMZBNZChgLIIJmK6TkpUYjncL62J3TrJP4tFEGlXu885lZAsnHZCgBFyest49bZAwQFV9OZBpgNvCkLp7BbZBniKhDhcwVCWRakVuVKL2h1OSUDU4UdR2swhZAqrtqXyXZBTcHEsn4nL9yPQeSIIkn0JiZBaXWnT7owZDZD'
+token = 'CAACEdEose0cBAKvE4ANEG6InnkhpZAaiPzWWjZBHAUse2ytZAJaXQbbHnKn3UUNLJevEKx8uFT5BmZB4dDAuu8KWA0xd1Gq48ciwFIg10BfvbPq32G5Uw4ZCeUcUz6JQ3u9JVq9puZAhQKKeEjtE51FONEJCNgrlmV4NmAG6FgtPRj2ce1WUuY06UHtRC0MLy1OUCG41BzCQZDZD'
 
 # API
 api = 'https://graph.facebook.com'
 
-# Action
-action = '/me'
+# Limit
+limit = 25
 
 # Build query
 def q(action):
@@ -18,14 +18,33 @@ def q(action):
         query += '&'
     else:
         query += '?'
-    query += 'access_token=' + token
+    query += 'limit=' + str(limit)
+    query += '&access_token=' + token
     return query
 
-# URL
-url = q(action)
 
-# Operation
-response = urllib2.urlopen(url)
-content = response.read()
-response.close()
-data = json.loads(content)
+# Network
+def toh_network():
+    action = '/tasteofhome/feed'
+    url = q(action)
+    response = urllib2.urlopen(url)
+    content = response.read()
+    response.close()
+    data = json.loads(content)
+    process_data(data)
+
+# Process data
+def process_data(data):
+    if data['data']:
+        process_posts(data['data'])
+    if data['paging']:
+        pass #while
+
+# Process posts
+def process_posts(posts):
+    for post in posts:
+        print 'author:', post['from']['name']
+        print '---'
+
+
+
