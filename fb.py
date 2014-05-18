@@ -37,7 +37,8 @@ def process_posts(posts):
             'type': 'post',
             'message': message
         }
-        toh.add_node(ide, info)
+        if not toh.has_node(ide):
+            toh.add_node(ide, info)
         # author info
         author_id = post['from']['id']
         if author_id != toh_id:
@@ -45,11 +46,18 @@ def process_posts(posts):
                 'type': 'user',
                 'name': post['from']['name']
             }
-            toh.add_node(author_id, author_info)
-            toh.add_edge(author_id, ide, label='posts')
-            toh.add_edge(author_id, toh_id, label='likes')
+            if not toh.has_node(author_id):
+                toh.add_node(author_id, author_info)
+            if not toh.has_edge(author_id, ide):
+                toh.add_edge(author_id, ide, label='posts')
+            if not toh.has_edge(author_id, toh_id):
+                toh.add_edge(author_id, toh_id, label='likes')
+    
     global_var['posts'] += len(posts)
-    print global_var['posts'], 'posts processed...'
+    if global_var['posts'] % 100 == 0:
+        print global_var['posts'], 'posts processed...'
+    if global_var['posts'] % 1000 == 0:
+        nx.write_gexf(toh, 'toh.gexf')
 
 def process_data(data):
     if data['data']:
