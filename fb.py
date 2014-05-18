@@ -79,7 +79,7 @@ def process_posts(posts):
         toh.add_edge(user_id, post_id, label='posts')
         # post actions: likes, shares, comments
         #post_likes(post_id, user_id)
-        post_shares(post_id, user_id)
+        #post_shares(post_id, user_id)
 #        comment_users = post_comments(post_id, user_id)
     
     global_var['post_counter'] += len(posts)
