@@ -7,7 +7,7 @@ from datetime import datetime
 
 # QUERY
 # Access token
-token = 'CAACEdEose0cBAAoZCT48kfufEHVtUunMfp1ATtO1ZBnJZCv8knyhO7nfNKzOxOZCqZBsO8t5yzftQHH9yLsc0IRLVziNPL7lkpwPHRBIkNjdPVaWhdHQlVf25blC5VX0P4iyR9OFoQA3H4BiO4MO6NDQ0lyhEaksdbZAj8wc1cNzeO6RToE49q4PP3lEqgCLy15mLzuinWpgZDZD'
+token = 'CAACEdEose0cBAKfAXg6beLYVkj2D4a9I6h8kEqMRZBXdVDb6cOMKE8EreUuhjTZCCGKdlZBt1sgTKWTPZA5avyoxs6gkizseowj8S7biuXhZC8h1wx7SyFqGG9Qx6KLzLh7bitzsWtdXBU5ZCwGFMNRWSCLPZB2cxC6UA9kVL7M1dCZBzMWkEHlJMgzko9e2lIzuV0nbpyXDVQZDZD'
 
 # Api
 api = 'https://graph.facebook.com'
