@@ -28,35 +28,34 @@ def q(action):
 global_var = {'post_counter': 0}
 
 POSTS = 0
-LIKES = 1
-SHARES = 2
-COMMENTS = 3
+COMMENTS = 1
 
 
 # FUNCTIONS
 # Graph functions
-def process_shares(shares, **extra):
-    print shares
-    print 'sddasdasd'
+def process_comments(comments, **extra):
     post_id = extra['post']
     post_user_id = extra['user']
-    for share in shares:
-        print share
-
-def process_likes(likes, **extra):
-    post_id = extra['post']
-    post_user_id = extra['user']
-    for like in likes:
-        user_id = like['id']
+    for comment in comments:
+        # user info
+        user_id = comment['from']['id']
         if not toh.has_node(user_id):
             user_info = {
                 'type': 'user',
-                'name': like['name']
+                'name': comment['from']['name']
             }
             toh.add_node(user_id, user_info)
             toh.add_edge(user_id, toh_id, label='is_member_of')
-        toh.add_edge(user_id, post_id, label='likes')
-        toh.add_edge(user_id, post_user_id, label='is_friend_of')
+            toh.add_edge(user_id, post_user_id, label='is_friend_of')
+        # comment info
+        comment_id = comment['id']
+        comment_info = {
+            'type': 'post',
+            'message': comment.get('message', '')
+        }
+        toh.add_node(comment_id, comment_info)
+        toh.add_edge(user_id, comment_id, label='posts')
+        toh.add_edge(comment_id, post_id, label='is_comment_of')
 
 def process_posts(posts):
     for post in posts:
@@ -77,10 +76,8 @@ def process_posts(posts):
         }
         toh.add_node(post_id, post_info)
         toh.add_edge(user_id, post_id, label='posts')
-        # post actions: likes, shares, comments
-        #post_likes(post_id, user_id)
-        #post_shares(post_id, user_id)
-#        comment_users = post_comments(post_id, user_id)
+        # post comments
+        post_comments(post_id, user_id)
     
     global_var['post_counter'] += len(posts)
     if global_var['post_counter'] % 100 == 0:
@@ -93,10 +90,6 @@ def process_data(data, result_type, **extra):
     if 'data' in data:
         if result_type == POSTS:
             process_posts(data['data'])
-        elif result_type == LIKES:
-            process_likes(data['data'], **extra)
-        elif result_type == SHARES:
-            process_shares(data['data'], **extra)
         else: # result_type == COMMENTS:
             process_comments(data['data'], **extra)
     if 'paging' in data and 'next' in data['paging']:
@@ -118,17 +111,6 @@ def post_comments(post_id, user_id):
     action = '/' + post_id + '/comments'
     url = q(action)
     process_query(url, COMMENTS, post=post_id, user=user_id)
-
-def post_shares(post_id, user_id):
-    action = '/' + post_id + '/sharedposts'
-    url = q(action)
-    process_query(url, SHARES, post=post_id, user=user_id)
-
-def post_likes(post_id, user_id):
-    print 'post_likes'
-    action = '/' + post_id + '/likes'
-    url = q(action)
-    process_query(url, LIKES, post=post_id, user=user_id)
 
 def toh_posts():
     action = '/tasteofhome/feed'
