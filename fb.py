@@ -4,7 +4,7 @@ import urllib2
 
 # QUERY
 # Access token
-token = 'CAACEdEose0cBAHqbPZBjrDk1JqPgcTYozRIZBzfv9JPDkHLxQBBnvuGaL3ms06jY1lMN9oVaJeJZBE4J8ixOfSx4O1ZBdpCZATIcrlNHMMPAd4SyZBHkLfNRgH031pSxjVT08eaLdDe2OoFrzu42JZBfEzuVRZBUSnSfYK45JzdJy33X8OJiYZAZAAZCYbzqUcZBxYliYply0t2GRwZDZD'
+token = 'CAACEdEose0cBAIOSOUgXEUj1fSXy2Ug0ZAbZAx6g9ZCb1RtaJUGoRdZAnXniCvnMeseEJHAHVIbn3vAfWuEUvwOAOfJDSrrEt2nqYHHwtXb8CJ7N5HvD9l5d0m7qmRh5DmesWDZCAvfIngciwmUQO1SBAkxpwZCLbRuYhWZBJZAScZAOsM4RCiHrNcOXZCfaNszDzxhUjzUizMgAZDZD'
 
 # Api
 api = 'https://graph.facebook.com'
@@ -51,7 +51,8 @@ def process_comments(comments, **extra):
         comment_id = comment['id']
         comment_info = {
             'type': 'post',
-            'message': comment.get('message', '')
+            'message': comment.get('message', ''),
+            'time': post.get('created_time', ''),
         }
         toh.add_node(comment_id, comment_info)
         toh.add_edge(user_id, comment_id, label='posts')
@@ -72,7 +73,8 @@ def process_posts(posts):
         post_id = post['id']
         post_info = {
             'type': 'post',
-            'message': post.get('message', '')
+            'message': post.get('message', ''),
+            'time': post.get('created_time', ''),
         }
         toh.add_node(post_id, post_info)
         toh.add_edge(user_id, post_id, label='posts')
@@ -103,7 +105,12 @@ def get_data(url):
     return data
 
 def process_query(url, result_type, **extra):
-    data = get_data(url)
+    try:
+        data = get_data(url)
+    except:
+        import ipdb; ipdb.set_trace()
+        url = q(action)
+        data = get_data(url)
     process_data(data, result_type, **extra)
 
 # Main functions
