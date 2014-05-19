@@ -1,10 +1,13 @@
 import json
 import networkx as nx
+import os
+import time
 import urllib2
+from datetime import datetime
 
 # QUERY
 # Access token
-token = 'CAACEdEose0cBABYnPyDwDL3lmbRp1wq9ZBWGpHFMPhwWpH3S4gPJ7N0AFDrPcc8Rbsyjl7GsuHG2WHiCbP36n3MJ4da0HfKTE62rQcfy3O60rTiVJbKMDkxllkboEpR3NneobZBLrAz2CzB2ovUYsVkJix7DmTCPWRY9UJPVWUPj4rd68hJIKaLg5wQ5hRqFV9dECmDwZDZD'
+token = 'CAACEdEose0cBAAoZCT48kfufEHVtUunMfp1ATtO1ZBnJZCv8knyhO7nfNKzOxOZCqZBsO8t5yzftQHH9yLsc0IRLVziNPL7lkpwPHRBIkNjdPVaWhdHQlVf25blC5VX0P4iyR9OFoQA3H4BiO4MO6NDQ0lyhEaksdbZAj8wc1cNzeO6RToE49q4PP3lEqgCLy15mLzuinWpgZDZD'
 
 # Api
 api = 'https://graph.facebook.com'
@@ -32,6 +35,17 @@ COMMENTS = 1
 
 
 # FUNCTIONS
+# Timestamp functions
+def oldest_time(toh):
+    nodes = toh.nodes(data=True)
+    posts = filter(lambda x: 'time' in x[1], nodes)
+    ordered_posts = sorted(posts, key=lambda x: x[1]['time'])
+    oldest_datetime = ordered_posts[0][1]['time']
+    oldest_date_str = oldest_datetime.split('T')[0]
+    oldest_date_datetime = datetime.strptime(oldest_date_str, "%Y-%m-%d")
+    oldest_tmstmp = int(time.mktime(oldest_date_datetime.timetuple()))
+    return oldest_tmstmp
+
 # Graph functions
 def process_comments(comments, **extra):
     post_id = extra['post']
@@ -84,6 +98,7 @@ def process_posts(posts):
     global_var['post_counter'] += len(posts)
     if global_var['post_counter'] % 100 == 0:
         print global_var['post_counter'], 'posts processed...'
+        print 'Date -', post_info['time']
     if global_var['post_counter'] % 1000 == 0:
         nx.write_gexf(toh, 'toh.gexf')
 
@@ -105,12 +120,7 @@ def get_data(url):
     return data
 
 def process_query(url, result_type, **extra):
-    try:
-        data = get_data(url)
-    except:
-        import ipdb; ipdb.set_trace()
-        url = q(action)
-        data = get_data(url)
+    data = get_data(url)
     process_data(data, result_type, **extra)
 
 # Main functions
@@ -124,25 +134,39 @@ def toh_posts():
     url = q(action)
     process_query(url, POSTS)
 
+def toh_posts_ts(ts):
+    action = '/tasteofhome/feed?until=' + str(ts)
+    url = q(action)
+    process_query(url, POSTS)
+
 
 # NETWORK
-# Graph
-toh = nx.Graph()
-
-# Add toh node
-action = '/tasteofhome?fields=name'
-url = q(action)
-data = get_data(url)
-toh_id = data['id']
-toh_info = {
-    'type': 'toh',
-    'name': data['name'],
-}
-toh.add_node(toh_id, toh_info)
-
-# Process toh relations
-toh_posts()
-
+if os.path.isfile('toh.gexf'):
+    # Recover graph
+    toh = nx.read_gexf('toh.gexf')
+    # Recover toh id
+    action = '/tasteofhome?fields=name'
+    url = q(action)
+    data = get_data(url)
+    toh_id = data['id']
+    # Keep processing toh relations
+    ts = oldest_time(toh)
+    toh_posts_ts(ts)
+else:
+    # Graph
+    toh = nx.Graph()
+    # Add toh node
+    action = '/tasteofhome?fields=name'
+    url = q(action)
+    data = get_data(url)
+    toh_id = data['id']
+    toh_info = {
+        'type': 'toh',
+        'name': data['name'],
+    }
+    toh.add_node(toh_id, toh_info)
+    # Process toh relations
+    toh_posts()
 
 
 
