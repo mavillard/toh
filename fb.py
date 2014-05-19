@@ -4,7 +4,7 @@ import urllib2
 
 # QUERY
 # Access token
-token = 'CAACEdEose0cBAIOSOUgXEUj1fSXy2Ug0ZAbZAx6g9ZCb1RtaJUGoRdZAnXniCvnMeseEJHAHVIbn3vAfWuEUvwOAOfJDSrrEt2nqYHHwtXb8CJ7N5HvD9l5d0m7qmRh5DmesWDZCAvfIngciwmUQO1SBAkxpwZCLbRuYhWZBJZAScZAOsM4RCiHrNcOXZCfaNszDzxhUjzUizMgAZDZD'
+token = 'CAACEdEose0cBABYnPyDwDL3lmbRp1wq9ZBWGpHFMPhwWpH3S4gPJ7N0AFDrPcc8Rbsyjl7GsuHG2WHiCbP36n3MJ4da0HfKTE62rQcfy3O60rTiVJbKMDkxllkboEpR3NneobZBLrAz2CzB2ovUYsVkJix7DmTCPWRY9UJPVWUPj4rd68hJIKaLg5wQ5hRqFV9dECmDwZDZD'
 
 # Api
 api = 'https://graph.facebook.com'
@@ -52,7 +52,7 @@ def process_comments(comments, **extra):
         comment_info = {
             'type': 'post',
             'message': comment.get('message', ''),
-            'time': post.get('created_time', ''),
+            'time': comment.get('created_time', ''),
         }
         toh.add_node(comment_id, comment_info)
         toh.add_edge(user_id, comment_id, label='posts')
