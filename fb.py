@@ -2,12 +2,16 @@ import json
 import networkx as nx
 import os
 import time
+import unicodedata
 import urllib2
 from datetime import datetime
 
 # QUERY
 # Access token
-token = 'CAACEdEose0cBAKfAXg6beLYVkj2D4a9I6h8kEqMRZBXdVDb6cOMKE8EreUuhjTZCCGKdlZBt1sgTKWTPZA5avyoxs6gkizseowj8S7biuXhZC8h1wx7SyFqGG9Qx6KLzLh7bitzsWtdXBU5ZCwGFMNRWSCLPZB2cxC6UA9kVL7M1dCZBzMWkEHlJMgzko9e2lIzuV0nbpyXDVQZDZD'
+token = '''
+CAACEdEose0cBAL1KHIDA5OUU7T7BshZCGZBeC53DZCrKUHFKcDpFhTa6JBBFTPpSLzZAgxo7QSxAP8KmvFJ4qgaOQoJpyWqZC7T1ujKV5DZCAoVw1zhoedxKLsytxP4der7hQcKejVTxJoONSTs5vAWgXqs2d6uQEzefij5cUy95AdLR4w8ZAPQcJtGdTAQaqZBmz73A0JwipQZDZD
+'''
+token = token.strip()
 
 # Api
 api = 'https://graph.facebook.com'
@@ -28,23 +32,50 @@ def q(action):
 
 
 # GLOBAL VARS
-global_var = {'post_counter': 0}
+global_var = {
+    'post_counter': 0,
+}
 
 POSTS = 0
 COMMENTS = 1
 
 
 # FUNCTIONS
+# Coding functions
+def special_cases(text):
+    if '\b' in text:
+        result = text.replace('\b', '')
+    else:
+        result = text
+    return result
+
+def check_coding(text):
+    text = special_cases(text)
+    return unicodedata.normalize('NFKD', text).encode('ascii', 'ignore')
+
 # Timestamp functions
-def oldest_time(toh):
+def previous_day_oldest_date(toh):
     nodes = toh.nodes(data=True)
     posts = filter(lambda x: 'time' in x[1], nodes)
     ordered_posts = sorted(posts, key=lambda x: x[1]['time'])
-    oldest_datetime = ordered_posts[0][1]['time']
-    oldest_date_str = oldest_datetime.split('T')[0]
-    oldest_date_datetime = datetime.strptime(oldest_date_str, "%Y-%m-%d")
-    oldest_tmstmp = int(time.mktime(oldest_date_datetime.timetuple()))
-    return oldest_tmstmp
+    i = 0
+    oldest_date = ordered_posts[i][1]['time']
+    oldest_date_str = oldest_date.split('T')[0]
+    oldest_date_previous_day = ordered_posts[i + 1][1]['time']
+    oldest_date_previous_day_str = oldest_date_previous_day.split('T')[0]
+    while oldest_date_str == oldest_date_previous_day_str:
+        oldest_date = ordered_posts[i][1]['time']
+        oldest_date_str = oldest_date.split('T')[0]
+        oldest_date_previous_day = ordered_posts[i + 1][1]['time']
+        oldest_date_previous_day_str = oldest_date_previous_day.split('T')[0]
+        i += 1
+    oldest_date_datetime = datetime.strptime(
+        oldest_date_previous_day_str,
+        "%Y-%m-%d"
+    )
+    ts = int(time.mktime(oldest_date_datetime.timetuple()))
+    print 'Recovering posts from', oldest_date_previous_day_str
+    return ts
 
 # Graph functions
 def process_comments(comments, **extra):
@@ -56,7 +87,7 @@ def process_comments(comments, **extra):
         if not toh.has_node(user_id):
             user_info = {
                 'type': 'user',
-                'name': comment['from']['name']
+                'name': check_coding(comment['from']['name'])
             }
             toh.add_node(user_id, user_info)
             toh.add_edge(user_id, toh_id, label='is_member_of')
@@ -65,8 +96,8 @@ def process_comments(comments, **extra):
         comment_id = comment['id']
         comment_info = {
             'type': 'post',
-            'message': comment.get('message', ''),
-            'time': comment.get('created_time', ''),
+            'message': check_coding(comment.get('message', u'')),
+            'time': comment.get('created_time', u''),
         }
         toh.add_node(comment_id, comment_info)
         toh.add_edge(user_id, comment_id, label='posts')
@@ -79,7 +110,7 @@ def process_posts(posts):
         if not toh.has_node(user_id):
             user_info = {
                 'type': 'user',
-                'name': post['from']['name']
+                'name': check_coding(post['from']['name'])
             }
             toh.add_node(user_id, user_info)
             toh.add_edge(user_id, toh_id, label='is_member_of')
@@ -87,8 +118,8 @@ def process_posts(posts):
         post_id = post['id']
         post_info = {
             'type': 'post',
-            'message': post.get('message', ''),
-            'time': post.get('created_time', ''),
+            'message': check_coding(post.get('message', u'')),
+            'time': post.get('created_time', u''),
         }
         toh.add_node(post_id, post_info)
         toh.add_edge(user_id, post_id, label='posts')
@@ -98,7 +129,7 @@ def process_posts(posts):
     global_var['post_counter'] += len(posts)
     if global_var['post_counter'] % 100 == 0:
         print global_var['post_counter'], 'posts processed...'
-        print 'Date -', post_info['time']
+        print 'Last date:', post_info['time']
     if global_var['post_counter'] % 1000 == 0:
         nx.write_gexf(toh, 'toh.gexf')
 
@@ -167,6 +198,14 @@ else:
     toh.add_node(toh_id, toh_info)
     # Process toh relations
     toh_posts()
+
+
+
+
+
+
+
+
 
 
 
