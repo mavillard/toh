@@ -2,14 +2,13 @@ import json
 import networkx as nx
 import os
 import time
-import unicodedata
 import urllib2
 from datetime import datetime
 
 # QUERY
 # Access token
 token = '''
-CAACEdEose0cBAL1KHIDA5OUU7T7BshZCGZBeC53DZCrKUHFKcDpFhTa6JBBFTPpSLzZAgxo7QSxAP8KmvFJ4qgaOQoJpyWqZC7T1ujKV5DZCAoVw1zhoedxKLsytxP4der7hQcKejVTxJoONSTs5vAWgXqs2d6uQEzefij5cUy95AdLR4w8ZAPQcJtGdTAQaqZBmz73A0JwipQZDZD
+CAACEdEose0cBAJme0PpRaYRIWZAGqMGYZAUrJOv4CLv76OnCwUMUoeE7vt8fYdrUi3Q52GY4PWrwyBHZCtIE1wOTMIkI07TZCJj8qCt1OxxnAqyfV92Fw4hwmZCVw8B2SEoDMA0g8481ju0AX4YdE0ZC37LMUfB5jZAs7XJzyTXYiZBTCtkXZAvzIyRn30UgkrsBunlQgReU76wZDZD
 '''
 token = token.strip()
 
@@ -34,6 +33,9 @@ def q(action):
 # GLOBAL VARS
 global_var = {
     'post_counter': 0,
+    'data_accepted': 0,
+    'data_rejected': 0,
+    'percentage_rejected': 0.0,
 }
 
 POSTS = 0
@@ -42,16 +44,17 @@ COMMENTS = 1
 
 # FUNCTIONS
 # Coding functions
-def special_cases(text):
-    if '\b' in text:
-        result = text.replace('\b', '')
-    else:
-        result = text
-    return result
-
 def check_coding(text):
-    text = special_cases(text)
-    return unicodedata.normalize('NFKD', text).encode('ascii', 'ignore')
+    result = ''
+    try:
+        result = str(text)
+        global_var['data_accepted'] += 1
+    except:
+        global_var['data_rejected'] += 1
+    finally:
+        global_var['percentage_rejected'] = global_var['data_rejected'] * 100 \
+            / float(global_var['data_accepted'] + global_var['data_rejected'])
+    return result
 
 # Timestamp functions
 def previous_day_oldest_date(toh):
@@ -129,6 +132,7 @@ def process_posts(posts):
     global_var['post_counter'] += len(posts)
     if global_var['post_counter'] % 100 == 0:
         print global_var['post_counter'], 'posts processed...'
+        print global_var['percentage_rejected'], '% of data rejected...'
         print 'Last date:', post_info['time']
     if global_var['post_counter'] % 1000 == 0:
         nx.write_gexf(toh, 'toh.gexf')
