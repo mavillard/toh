@@ -8,7 +8,7 @@ from datetime import datetime
 # QUERY
 # Access token
 token = '''
-CAACEdEose0cBAJme0PpRaYRIWZAGqMGYZAUrJOv4CLv76OnCwUMUoeE7vt8fYdrUi3Q52GY4PWrwyBHZCtIE1wOTMIkI07TZCJj8qCt1OxxnAqyfV92Fw4hwmZCVw8B2SEoDMA0g8481ju0AX4YdE0ZC37LMUfB5jZAs7XJzyTXYiZBTCtkXZAvzIyRn30UgkrsBunlQgReU76wZDZD
+CAACEdEose0cBAG3VxO3RCLDYwrqSd57zOO9OoW6GuXM9sYwAnT9uqMXcJSDe5aVMSGXGTmA5hrps9rVhW7srCdUKFSbqjtlezMjRlaQDHGEMplDEZAGWrBluaVodneOdr7bVviXfZA3BSGQI8gWzRK9HPnCx5jSilZCFbjM9ZAficZCmfxsqPZCwFIWZAmZAasGx6all7OitNAZDZD
 '''
 token = token.strip()
 
@@ -16,7 +16,7 @@ token = token.strip()
 api = 'https://graph.facebook.com'
 
 # Limit
-limit = 100
+limit = 25
 
 # Build query
 def q(action):
@@ -33,9 +33,9 @@ def q(action):
 # GLOBAL VARS
 global_var = {
     'post_counter': 0,
-    'data_accepted': 0,
-    'data_rejected': 0,
-    'percentage_rejected': 0.0,
+    'last_date': '',
+    'last_year': 0,
+    'year': 2014,
 }
 
 POSTS = 0
@@ -43,108 +43,79 @@ COMMENTS = 1
 
 
 # FUNCTIONS
-# Coding functions
-def check_coding(text):
-    result = ''
-    try:
-        result = str(text)
-        global_var['data_accepted'] += 1
-    except:
-        global_var['data_rejected'] += 1
-    finally:
-        global_var['percentage_rejected'] = global_var['data_rejected'] * 100 \
-            / float(global_var['data_accepted'] + global_var['data_rejected'])
-    return result
-
-# Timestamp functions
-def previous_day_oldest_date(toh):
-    nodes = toh.nodes(data=True)
-    posts = filter(lambda x: 'time' in x[1], nodes)
-    ordered_posts = sorted(posts, key=lambda x: x[1]['time'])
-    i = 0
-    oldest_date = ordered_posts[i][1]['time']
-    oldest_date_str = oldest_date.split('T')[0]
-    oldest_date_previous_day = ordered_posts[i + 1][1]['time']
-    oldest_date_previous_day_str = oldest_date_previous_day.split('T')[0]
-    while oldest_date_str == oldest_date_previous_day_str:
-        oldest_date = ordered_posts[i][1]['time']
-        oldest_date_str = oldest_date.split('T')[0]
-        oldest_date_previous_day = ordered_posts[i + 1][1]['time']
-        oldest_date_previous_day_str = oldest_date_previous_day.split('T')[0]
-        i += 1
-    oldest_date_datetime = datetime.strptime(
-        oldest_date_previous_day_str,
-        "%Y-%m-%d"
-    )
-    ts = int(time.mktime(oldest_date_datetime.timetuple()))
-    print 'Recovering posts from', oldest_date_previous_day_str
+# Time functions
+def date_to_timestamp(date_str):
+    date = datetime.strptime(date_str, "%Y-%m-%d")
+    ts = int(time.mktime(date.timetuple()))
     return ts
 
+def get_date(ts_str):
+    return ts_str.split('T')[0]
+
+def get_year(date_str):
+    return int(date_str.split('-')[0])
+
 # Graph functions
+def process_user(user_id, user_name):
+    if not toh.has_node(user_id):
+        user_info = {
+            'name': user_namelast_date,
+            'contributions': 1,
+        }
+        toh.add_node(user_id, user_info)
+    else:
+        toh.node[user_id]['contributions'] += 1
+
+def process_relation(user_id_1, user_id_2):
+    if not toh.has_edge(user_id_1, user_id_2):
+        toh.add_edge(user_id_1, user_id_2, grade=1)
+    else:
+        toh[user_id_1][user_id_2]['grade'] += 1
+
 def process_comments(comments, **extra):
-    post_id = extra['post']
     post_user_id = extra['user']
     for comment in comments:
-        # user info
         user_id = comment['from']['id']
-        if not toh.has_node(user_id):
-            user_info = {
-                'type': 'user',
-                'name': check_coding(comment['from']['name'])
-            }
-            toh.add_node(user_id, user_info)
-            toh.add_edge(user_id, toh_id, label='is_member_of')
-            toh.add_edge(user_id, post_user_id, label='is_friend_of')
-        # comment info
-        comment_id = comment['id']
-        comment_info = {
-            'type': 'post',
-            'message': check_coding(comment.get('message', u'')),
-            'time': comment.get('created_time', u''),
-        }
-        toh.add_node(comment_id, comment_info)
-        toh.add_edge(user_id, comment_id, label='posts')
-        toh.add_edge(comment_id, post_id, label='is_comment_of')
+        user_name = comment['from']['name']
+        process_user(user_id, user_name)
+        process_relation(user_id, post_user_id)
 
 def process_posts(posts):
+    created_time = ''
     for post in posts:
-        # user info
         user_id = post['from']['id']
-        if not toh.has_node(user_id):
-            user_info = {
-                'type': 'user',
-                'name': check_coding(post['from']['name'])
-            }
-            toh.add_node(user_id, user_info)
-            toh.add_edge(user_id, toh_id, label='is_member_of')
-        # post info
+        user_name = post['from']['name']
+        process_user(user_id, user_name)
         post_id = post['id']
-        post_info = {
-            'type': 'post',
-            'message': check_coding(post.get('message', u'')),
-            'time': post.get('created_time', u''),
-        }
-        toh.add_node(post_id, post_info)
-        toh.add_edge(user_id, post_id, label='posts')
-        # post comments
         post_comments(post_id, user_id)
+        
+        created_time = post['created_time']
+        last_date = get_date(created_time)
+        global_var['last_date'] = last_date
+        global_var['last_year'] = get_year(last_date)
     
     global_var['post_counter'] += len(posts)
-    if global_var['post_counter'] % 100 == 0:
-        print global_var['post_counter'], 'posts processed...'
-        print global_var['percentage_rejected'], '% of data rejected...'
-        print 'Last date:', post_info['time']
+    print global_var['post_counter'], 'posts processed...'
+    print 'Last date:', global_var['last_date']
+    print 'Users:', len(toh.nodes())
+    print 'Relations:', len(toh.edges())
     if global_var['post_counter'] % 1000 == 0:
         nx.write_gexf(toh, 'toh.gexf')
+        f = open('last_date.txt', 'w')
+        f.write(global_var['last_date'])
+        f.close()
 
 # Data processing functions
 def process_data(data, result_type, **extra):
+    end = False
     if 'data' in data:
         if result_type == POSTS:
             process_posts(data['data'])
+            if global_var['year'] != 0:
+                end = global_var['last_year'] < global_var['year']
         else: # result_type == COMMENTS:
             process_comments(data['data'], **extra)
-    if 'paging' in data and 'next' in data['paging']:
+    if not end and 'paging' in data and 'next' in data['paging']:
         process_query(data['paging']['next'], result_type, **extra)
 
 def get_data(url):
@@ -167,16 +138,16 @@ def post_comments(post_id, user_id):
 def toh_posts():
     action = '/tasteofhome/feed'
     url = q(action)
-    process_query(url, POSTS)
+    process_query(url, POSTS, year=2014)
 
 def toh_posts_ts(ts):
     action = '/tasteofhome/feed?until=' + str(ts)
     url = q(action)
-    process_query(url, POSTS)
+    process_query(url, POSTS, year=2014)
 
 
 # NETWORK
-if os.path.isfile('toh.gexf'):
+if os.path.isfile('toh.gexf') and os.path.isfile('last_date.txt'):
     # Recover graph
     toh = nx.read_gexf('toh.gexf')
     # Recover toh id
@@ -185,8 +156,11 @@ if os.path.isfile('toh.gexf'):
     data = get_data(url)
     toh_id = data['id']
     # Keep processing toh relations
-    ts = oldest_time(toh)
-    toh_posts_ts(ts)
+    f = open('last_date.txt')
+    last_date = f.read()
+    f.close()
+    ts = date_to_timestamp(last_date)
+#    toh_posts_ts(ts)
 else:
     # Graph
     toh = nx.Graph()
@@ -196,13 +170,13 @@ else:
     data = get_data(url)
     toh_id = data['id']
     toh_info = {
-        'type': 'toh',
         'name': data['name'],
+        'contributions': 1,
     }
     toh.add_node(toh_id, toh_info)
     # Process toh relations
-    toh_posts()
-
+#    toh_posts()
+nx.write_gexf(toh, 'toh.gexf')
 
 
 
