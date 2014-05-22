@@ -8,7 +8,7 @@ from datetime import datetime
 # QUERY
 # Access token
 token = '''
-CAACEdEose0cBAG3VxO3RCLDYwrqSd57zOO9OoW6GuXM9sYwAnT9uqMXcJSDe5aVMSGXGTmA5hrps9rVhW7srCdUKFSbqjtlezMjRlaQDHGEMplDEZAGWrBluaVodneOdr7bVviXfZA3BSGQI8gWzRK9HPnCx5jSilZCFbjM9ZAficZCmfxsqPZCwFIWZAmZAasGx6all7OitNAZDZD
+CAACEdEose0cBAEUNc23xgXydIGnZAKYpmmJrCrqDKwj3dfSaWM56e9XyLcfhPJFosja1GGt6EyQrDNTxlO1HujnXwc50zPHJLUaBZAcBZCOOFj3CrLdLsR467mVevtQmCtaRh5vFQyOqqL7wDA53ZAzSPm7F8bSRpNOHjRCHvCOfm57jR0myLn3aqfdzPq0kTMQIWTPZCRAZDZD
 '''
 token = token.strip()
 
@@ -16,7 +16,7 @@ token = token.strip()
 api = 'https://graph.facebook.com'
 
 # Limit
-limit = 25
+limit = 100
 
 # Build query
 def q(action):
@@ -59,7 +59,7 @@ def get_year(date_str):
 def process_user(user_id, user_name):
     if not toh.has_node(user_id):
         user_info = {
-            'name': user_namelast_date,
+            'name': user_name,
             'contributions': 1,
         }
         toh.add_node(user_id, user_info)
@@ -67,10 +67,11 @@ def process_user(user_id, user_name):
         toh.node[user_id]['contributions'] += 1
 
 def process_relation(user_id_1, user_id_2):
-    if not toh.has_edge(user_id_1, user_id_2):
-        toh.add_edge(user_id_1, user_id_2, grade=1)
-    else:
-        toh[user_id_1][user_id_2]['grade'] += 1
+    if user_id_1 != user_id_2:
+        if not toh.has_edge(user_id_1, user_id_2):
+            toh.add_edge(user_id_1, user_id_2, grade=1)
+        else:
+            toh[user_id_1][user_id_2]['grade'] += 1
 
 def process_comments(comments, **extra):
     post_user_id = extra['user']
@@ -81,11 +82,11 @@ def process_comments(comments, **extra):
         process_relation(user_id, post_user_id)
 
 def process_posts(posts):
-    created_time = ''
     for post in posts:
         user_id = post['from']['id']
         user_name = post['from']['name']
         process_user(user_id, user_name)
+        process_relation(user_id, toh_id)
         post_id = post['id']
         post_comments(post_id, user_id)
         
@@ -160,7 +161,7 @@ if os.path.isfile('toh.gexf') and os.path.isfile('last_date.txt'):
     last_date = f.read()
     f.close()
     ts = date_to_timestamp(last_date)
-#    toh_posts_ts(ts)
+    toh_posts_ts(ts)
 else:
     # Graph
     toh = nx.Graph()
@@ -175,9 +176,11 @@ else:
     }
     toh.add_node(toh_id, toh_info)
     # Process toh relations
-#    toh_posts()
+    toh_posts()
 nx.write_gexf(toh, 'toh.gexf')
-
+f = open('last_date.txt', 'w')
+f.write(global_var['last_date'])
+f.close()
 
 
 
